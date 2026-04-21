@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6-R Regel Quiz – Medikamentenmanagement</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --card: #1a2235;
+    --border: #2a3a55;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-head);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── ANIMATED BACKGROUND GRID ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 30%, rgba(0,212,255,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(124,58,237,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgPulse {
+    from { opacity: 0.5; transform: scale(1); }
+    to   { opacity: 1;   transform: scale(1.05); }
+  }
+
+  /* ─── SCREENS ─── */
+  .screen {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .screen.hidden { display: none; }
+
+  /* ─── HEADER BADGE ─── */
+  .station-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .15em;
+    padding: .4rem .9rem;
+    border-radius: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .station-badge .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.4s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ─── SCENARIO CARD ─── */
+  .scenario-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    max-width: 680px; width: 100%;
+    padding: 2.5rem;
+    box-shadow: 0 0 60px rgba(0,212,255,0.05), 0 4px 24px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scenario-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .scenario-number {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--muted);
+    letter-spacing: .1em;
+    margin-bottom: .5rem;
+  }
+
+  .scenario-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+  }
+
+  .scenario-story {
+    background: rgba(0,0,0,0.3);
+    border-left: 3px solid var(--accent2);
+    border-radius: 4px;
+    padding: 1.2rem 1.4rem;
+    font-size: .95rem;
+    line-height: 1.7;
+    margin-bottom: 1.8rem;
+    color: #cbd5e1;
+  }
+
+  .scenario-story strong { color: var(--warning); }
+  .scenario-story em { color: var(--danger); font-style: italic; }
+
+  /* ─── QUESTION ─── */
+  .question-label {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--accent);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: .8rem;
+  }
+
+  .question-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ─── ANSWER OPTIONS ─── */
+  .options { display: flex; flex-direction: column; gap: .6rem; }
+
+  .option-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-head);
+    font-size: .95rem;
+    font-weight: 600;
+    padding: .9rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all .2s ease;
+    display: flex; align-items: center; gap: .9rem;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    background: rgba(0,212,255,0.08);
+    border-color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  .option-btn .opt-key {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    padding: .2rem .5rem;
+    min-width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .option-btn.correct {
+    background: rgba(16,185,129,0.15);
+    border-color: var(--success);
+    color: #6ee7b7;
+  }
+
+  .option-btn.wrong {
+    background: rgba(239,68,68,0.12);
+    border-color: var(--danger);
+    color: #fca5a5;
+  }
+
+  .option-btn.dimmed { opacity: .35; }
+
+  /* ─── FEEDBACK ─── */
+  .feedback {
+    margin-top: 1.4rem;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    font-size: .95rem;
+    line-height: 1.6;
+    display: none;
+    animation: fadeUp .3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .feedback.show { display: block; }
+  .feedback.correct-fb {
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.4);
+    color: #6ee7b7;
+  }
+  .feedback.wrong-fb {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+  }
+
+  .feedback-icon { font-size: 1.3rem; margin-right: .4rem; }
+
+  /* ─── NEXT BUTTON ─── */
+  .next-btn {
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: .9rem 2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: none;
+    width: 100%;
+    letter-spacing: .05em;
+    transition: opacity .2s, transform .15s;
+  }
+  .next-btn:hover { opacity: .9; transform: scale(1.01); }
+  .next-btn.show { display: block; animation: fadeUp .3s ease; }
+
+  /* ─── PROGRESS ─── */
+  .progress-bar-wrap {
+    max-width: 680px; width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  .progress-label {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    display: flex; justify-content: space-between;
+    margin-bottom: .4rem;
+  }
+  .progress-track {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width .5s ease;
+  }
+
+  /* ─── RETRY / WRONG SCREEN ─── */
+  .retry-card {
+    background: var(--card);
+    border: 1px solid rgba(239,68,68,0.35);
+    border-radius: 12px;
+    max-width: 480px; width: 100%;
+    padding: 2.5rem;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(239,68,68,0.1);
+  }
+  .retry-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+  .retry-title { font-size: 1.6rem; font-weight: 800; color: var(--danger); margin-bottom: .7rem; }
+  .retry-text { color: var(--muted); line-height: 1.6; margin-bottom: 1.5rem; }
+  .retry-btn {
+    background: var(--danger);
+    color: #fff;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1rem;
+    padding: .9rem 2.5rem;
+    border: none; border-radius: 8px;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  .retry-btn:hover { opacity: .85; }
+
+  /* ─── VICTORY SCREEN ─── */
+  #screen-victory {
+    background: radial-gradient(ellipse at center, rgba(16,185,129,0.08) 0%, transparent 70%);
+  }
+
+  .victory-wrap { text-align: center; max-width: 620px; }
+
+  .trophy-anim {
+    font-size: 5rem;
+    display: block;
+    animation: trophyBounce 1s cubic-bezier(.36,.07,.19,.97) both;
+    margin-bottom: 1rem;
+  }
+  @keyframes trophyBounce {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    60%  { transform: scale(1.2) rotate(5deg); opacity: 1; }
+    80%  { transform: scale(.95) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+
+  .confetti-row { margin: .8rem 0 1.5rem; font-size: 1.8rem; animation: fadeUp .6s .4s both ease; }
+
+  .victory-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--success), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.25;
+    margin-bottom: .8rem;
+    animation: fadeUp .5s .3s both ease;
+  }
+
+  .victory-sub {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    line-height: 1.65;
+    margin-bottom: 2rem;
+    animation: fadeUp .5s .5s both ease;
+  }
+
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem;
+    margin: 0 auto 2rem;
+    max-width: 520px;
+    animation: fadeUp .5s .7s both ease;
+  }
+
+  .rule-chip {
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    font-size: .85rem;
+    display: flex; align-items: center; gap: .5rem;
+    text-align: left;
+    color: #a7f3d0;
+  }
+  .rule-chip .r-num {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--success);
+    font-weight: 700;
+    min-width: 20px;
+  }
+
+  .stars-anim {
+    font-size: 1.4rem;
+    letter-spacing: .3rem;
+    animation: fadeUp .5s .9s both ease, starPulse 2s 1.5s ease-in-out infinite;
+  }
+  @keyframes starPulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .7; transform: scale(1.05); }
+  }
+
+  /* ─── FLOATING PARTICLES ─── */
+  .particles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    animation: floatUp var(--dur) var(--delay) ease-in infinite;
+    left: var(--x);
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: .6; }
+    90%  { opacity: .2; }
+    100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 520px) {
+    .scenario-card { padding: 1.6rem 1.2rem; }
+    .scenario-title { font-size: 1.2rem; }
+    .rules-grid { grid-template-columns: 1fr; }
+    .victory-title { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating particles -->
+<div class="particles" id="particles"></div>
+
+<!-- ══════════════════════════════════════════════
+     QUIZ SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-quiz">
+  <div class="station-badge">
+    <span class="dot"></span>
+    <span id="badge-text">Posten 1 von 6</span>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>Fortschritt</span>
+      <span id="progress-pct">0 %</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="scenario-card">
+    <div class="scenario-number" id="sc-number"></div>
+
+    <div class="question-label">// Ihre Aufgabe</div>
+    <div class="question-text">Welche der 6-R-Regeln ist hier verletzt?</div>
+
+    <div class="options" id="options-container"></div>
+
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     RETRY SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen hidden" id="screen-retry">
+  <div class="retry-card">
+    <div class="retry-icon">⚠️</div>
+    <div class="retry-title">Falsche Antwort!</div>
+    <div class="retry-text" id="retry-text">
+      Keine Sorge – in der Pflege zählt jeder Versuch.
+      Lies das Szenario nochmals sorgfältig und versuche es erneut.
+    </div>
+    <button class="retry-btn" onclick="retryStation()">🔄 Erneut versuchen</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     VICTORY SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen hidden" id="screen-victory">
+  <div class="victory-wrap">
+    <span class="trophy-anim">🏆</span>
+    <div class="confetti-row">🎉 🎊 🥳 🎊 🎉</div>
+    <div class="victory-title">Herzlichen Glückwunsch!<br>Escape Room abgeschlossen!</div>
+    <p class="victory-sub">
+      Du hast alle 6 Posten erfolgreich gemeistert und alle<br>
+      <strong style="color:#6ee7b7">6-R-Regeln des Medikamentenmanagements</strong> kennengelernt!
+    </p>
+    <div class="rules-grid">
+      <div class="rule-chip"><span class="r-num">R1</span> Richtige Bewohner*in</div>
+      <div class="rule-chip"><span class="r-num">R2</span> Richtiges Medikament</div>
+      <div class="rule-chip"><span class="r-num">R3</span> Richtige Dosierung</div>
+      <div class="rule-chip"><span class="r-num">R4</span> Richtiger Zeitpunkt</div>
+      <div class="rule-chip"><span class="r-num">R5</span> Richtige Applikation</div>
+      <div class="rule-chip"><span class="r-num">R6</span> Richtige Dokumentation</div>
+    </div>
+    <div class="stars-anim">⭐ ⭐ ⭐ ⭐ ⭐ ⭐</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// DATA – 6 Stations
+// ══════════════════════════════════════
+const RULES = [
+  "Richtige Bewohner*in",
+  "Richtiges Medikament",
+  "Richtige Dosierung",
+  "Richtiger Zeitpunkt",
+  "Richtige Applikation / Anwendungsform",
+  "Richtige Dokumentation"
+];
+
+const STATIONS = [
+  {
+    id: 1,
+    title: "Verwechslung auf dem Flur",
+    story: `Pflegefachfrau Lisa eilt mit dem Medikamenten-Tablettchen ins Zimmer 12. Sie ruft: <em>„Herr Meier, Ihre Tabletten!"</em> – und verabreicht die Medikamente. Erst danach bemerkt sie: <strong>Herr Meier liegt in Zimmer 14, nicht in Zimmer 12.</strong> Frau Schmid aus Zimmer 12 hat die falschen Medikamente erhalten.`,
+    correct: 0,
+    explanation: "Korrekt! Bevor ein Medikament verabreicht wird, muss die Identität der Person eindeutig überprüft werden – z. B. durch Namensband, Lichtbildausweis oder aktive Bestätigung. Das ist die R1-Regel: <strong>Richtige Bewohner*in</strong>."
+  },
+  {
+    id: 2,
+    title: "Die falsche Schachtel",
+    story: `Pfleger Marco greift im Medikamentenschrank nach dem Blutdruckmittel. Die zwei Packungen sehen sich sehr ähnlich. Er verabreicht <strong>Metoprolol 50 mg – obwohl die ärztliche Verordnung Ramipril 5 mg</strong> lautet. Der Fehler wird erst beim nächsten Pflegewechsel bemerkt.`,
+    correct: 1,
+    explanation: "Richtig! Es wurde ein anderes Medikament verabreicht als verordnet. Die R2-Regel – <strong>Richtiges Medikament</strong> – verlangt, dass vor der Verabreichung stets der Wirkstoffname und die Verordnung abgeglichen werden."
+  },
+  {
+    id: 3,
+    title: "Doppelte Tablette",
+    story: `Frau Bergmann erhält laut Verordnung täglich <strong>1 Tablette Marcumar 3 mg</strong>. Pflegerin Susi glaubt, eine Tablette sei zu wenig, und gibt <em>„sicherheitshalber"</em> zwei Tabletten. Am nächsten Tag zeigt der INR-Wert eine gefährliche Überdosierung.`,
+    correct: 2,
+    explanation: "Genau! Eine eigenständige Anpassung der Medikamentenmenge widerspricht der R3-Regel: <strong>Richtige Dosierung</strong>. Nur die verordnete Menge darf verabreicht werden."
+  },
+  {
+    id: 4,
+    title: "Vergessenes Abendmedikament",
+    story: `Das Insulin für Herrn Kauf soll laut Verordnung <strong>abends um 20:00 Uhr</strong> injiziert werden. Da die Nachtpflegerin sehr beschäftigt ist, verabreicht sie es erst um <em>23:45 Uhr</em>. Herr Kauf hat seinen Abendsnack bereits lange zuvor gegessen.`,
+    correct: 3,
+    explanation: "Perfekt erkannt! Der falsche Zeitpunkt kann bei zeitkritischen Medikamenten wie Insulin schwerwiegende Folgen haben. R4 lautet: <strong>Richtiger Zeitpunkt</strong>."
+  },
+  {
+    id: 5,
+    title: "Die zerdrückte Kapsel",
+    story: `Frau Vogel hat Schluckbeschwerden. Pfleger Tom zerdrückt die <strong>Retard-Kapsel Nifedipin</strong> und mischt das Pulver ins Joghurt. Er meint es gut – doch Retard-Kapseln dürfen <em>nicht</em> geöffnet oder zerdrückt werden, da sonst die Wirkstofffreisetzung unkontrolliert erfolgt.`,
+    correct: 4,
+    explanation: "Korrekt! Die Applikationsform muss der Verordnung entsprechen. Retard-Präparate dürfen nicht geteilt, gemörsert oder geöffnet werden. Das ist R5: <strong>Richtige Applikation / Anwendungsform</strong>."
+  },
+  {
+    id: 6,
+    title: "Die vergessene Unterschrift",
+    story: `Pfleger Jan verabreicht Frau Klein ihre Mittagsmedikamente korrekt und pünktlich. <strong>Er vergisst jedoch, die Verabreichung im Medikamentenblatt zu dokumentieren.</strong> Die Kollegin im Spätdienst sieht keinen Eintrag und verabreicht die Medikamente ein zweites Mal.`,
+    correct: 5,
+    explanation: "Ausgezeichnet! Nur was dokumentiert ist, gilt als verabreicht. Die fehlende Dokumentation führte zur Doppelverabreichung. R6 lautet: <strong>Richtige Dokumentation</strong>."
+  }
+];
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let currentStation = 0;
+let answered = false;
+
+// ══════════════════════════════════════
+// URL ROUTING – ?station=N
+// ══════════════════════════════════════
+function getStationFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const s = parseInt(params.get('station') || '1', 10);
+  return Math.min(Math.max(s, 1), 6) - 1;
+}
+
+// ══════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════
+function renderStation(idx) {
+  const s = STATIONS[idx];
+  answered = false;
+
+  document.getElementById('badge-text').textContent = `Posten ${s.id} von 6`;
+  const pct = Math.round((idx / 6) * 100);
+  document.getElementById('progress-pct').textContent = pct + ' %';
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  document.getElementById('sc-number').textContent = `// POSTEN ${String(s.id).padStart(2,'0')}`;
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+
+  // Shuffle options keeping track of correct answer
+  const indices = [0,1,2,3,4,5];
+  const shuffled = shuffleArray(indices);
+
+  shuffled.forEach((ruleIdx, pos) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.dataset.ruleIdx = ruleIdx;
+    btn.innerHTML = `<span class="opt-key">${String.fromCharCode(65+pos)}</span>${RULES[ruleIdx]}`;
+    btn.addEventListener('click', () => selectAnswer(btn, ruleIdx, s.correct));
+    container.appendChild(btn);
+  });
+
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('next-btn').className = 'next-btn';
+}
+
+function selectAnswer(btn, chosen, correct) {
+  if (answered) return;
+  answered = true;
+
+  const allBtns = document.querySelectorAll('.option-btn');
+  allBtns.forEach(b => {
+    b.disabled = true;
+    const ri = parseInt(b.dataset.ruleIdx);
+    if (ri === correct) b.classList.add('correct');
+    else if (b === btn && chosen !== correct) b.classList.add('wrong');
+    else if (b !== btn) b.classList.add('dimmed');
+  });
+
+  const fb = document.getElementById('feedback');
+  const nextBtn = document.getElementById('next-btn');
+
+  if (chosen === correct) {
+    fb.innerHTML = `<span class="feedback-icon">✅</span> ${STATIONS[currentStation].explanation}`;
+    fb.className = 'feedback correct-fb show';
+    nextBtn.textContent = currentStation < 5 ? 'Weiter zum nächsten Posten →' : '🎉 Abschluss!';
+    nextBtn.className = 'next-btn show';
+  } else {
+    // Show retry screen after short delay
+    setTimeout(() => {
+      showScreen('screen-retry');
+    }, 800);
+  }
+}
+
+function retryStation() {
+  showScreen('screen-quiz');
+  renderStation(currentStation);
+}
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (currentStation < 5) {
+    currentStation++;
+    renderStation(currentStation);
+    // Update progress
+    const pct = Math.round((currentStation / 6) * 100);
+    document.getElementById('progress-pct').textContent = pct + ' %';
+    document.getElementById('progress-fill').style.width = pct + '%';
+  } else {
+    // Update to 100%
+    document.getElementById('progress-pct').textContent = '100 %';
+    document.getElementById('progress-fill').style.width = '100%';
+    setTimeout(() => {
+      showScreen('screen-victory');
+      launchConfetti();
+    }, 300);
+  }
+});
+
+// ══════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════
+function showScreen(id) {
+  ['screen-quiz','screen-retry','screen-victory'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+// ══════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════
+function createParticles() {
+  const wrap = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      --x: ${Math.random()*100}%;
+      --dur: ${6 + Math.random()*8}s;
+      --delay: ${Math.random()*10}s;
+      background: ${Math.random() > .5 ? 'var(--accent)' : 'var(--accent2)'};
+      width: ${2+Math.random()*4}px;
+      height: ${2+Math.random()*4}px;
+    `;
+    wrap.appendChild(p);
+  }
+}
+
+// ══════════════════════════════════════
+// VICTORY CONFETTI (CSS only)
+// ══════════════════════════════════════
+function launchConfetti() {
+  const wrap = document.getElementById('particles');
+  const colors = ['#00d4ff','#7c3aed','#10b981','#f59e0b','#ef4444','#fff'];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('div');
+    const size = 6 + Math.random() * 8;
+    p.style.cssText = `
+      position:absolute;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      left:${Math.random()*100}%;
+      top:${80+Math.random()*20}%;
+      animation: floatUp ${2+Math.random()*3}s ${Math.random()*1}s ease-out forwards;
+      opacity:0;
+    `;
+    wrap.appendChild(p);
+  }
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+createParticles();
+currentStation = getStationFromURL();
+renderStation(currentStation);
+showScreen('screen-quiz');
+</script>
+</body>
+</html>
